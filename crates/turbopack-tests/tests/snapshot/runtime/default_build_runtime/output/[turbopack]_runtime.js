@@ -1,5 +1,6 @@
 const RUNTIME_PUBLIC_PATH = "output/[turbopack]_runtime.js";
 const OUTPUT_ROOT = "crates/turbopack-tests/tests/snapshot/runtime/default_build_runtime";
+const ASSET_PREFIX = "";
 /**
  * This file contains runtime types and functions that are shared between all
  * TurboPack ECMAScript runtimes.
@@ -321,6 +322,7 @@ let SourceType;
    */ SourceType[SourceType["Parent"] = 1] = "Parent";
 })(SourceType || (SourceType = {}));
 const path = require("path");
+const url = require('url');
 const relativePathToRuntimeRoot = path.relative(RUNTIME_PUBLIC_PATH, ".");
 // Compute the relative path to the `distDir`.
 const relativePathToDistRoot = path.relative(path.join(OUTPUT_ROOT, RUNTIME_PUBLIC_PATH), ".");
@@ -367,6 +369,21 @@ const moduleCache = Object.create(null);
     });
 };
 relativeURL.prototype = URL.prototype;
+/**
+ * Returns an absolute path to the given module's id.
+ *
+ */ function createResolvePathFromModule(resolver) {
+    return function resolvePathFromModule(moduleId) {
+        const exported = resolver(moduleId);
+        const exportedPath = exported?.default ?? exported;
+        if (typeof exportedPath !== 'string') {
+            return exported;
+        }
+        const strippedAssetPrefix = exportedPath.replace(ASSET_PREFIX, '');
+        const resolved = path.resolve(ABSOLUTE_ROOT, OUTPUT_ROOT, strippedAssetPrefix);
+        return url.pathToFileURL(resolved);
+    };
+}
 function loadChunk(chunkData) {
     if (typeof chunkData === "string") {
         return loadChunkPath(chunkData);
@@ -449,10 +466,11 @@ function instantiateModule(id, source) {
     moduleCache[id] = module1;
     // NOTE(alexkirsz) This can fail when the module encounters a runtime error.
     try {
+        const r = commonJsRequire.bind(null, module1);
         moduleFactory.call(module1.exports, {
             a: asyncModule.bind(null, module1),
             e: module1.exports,
-            r: commonJsRequire.bind(null, module1),
+            r,
             t: runtimeRequire,
             x: externalRequire,
             y: externalImport,
@@ -473,6 +491,7 @@ function instantiateModule(id, source) {
             g: globalThis,
             p: resolveAbsolutePath,
             U: relativeURL,
+            R: createResolvePathFromModule(r),
             __dirname: module1.id.replace(/(^|\/)[\/]+$/, "")
         });
     } catch (error) {

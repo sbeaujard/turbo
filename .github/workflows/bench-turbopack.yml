@@ -123,7 +123,12 @@ jobs:
       needs.determine_jobs.outputs.cargo_on_main == 'true' ||
       needs.determine_jobs.outputs.cargo_only == 'true'
     name: Turbopack rust check
-    runs-on: ubuntu-latest-16-core-oss
+    runs-on:
+      - 'self-hosted'
+      - 'linux'
+      - 'x64'
+      - 'metal'
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -145,7 +150,12 @@ jobs:
 
   turbopack_rust_test_bench1:
     needs: [turbopack_rust_check]
-    runs-on: ubuntu-latest-16-core-oss
+    runs-on:
+      - 'self-hosted'
+      - 'linux'
+      - 'x64'
+      - 'metal'
+      
     name: Turbopack Rust testing benchmarks on ubuntu
 
     env:
@@ -432,7 +442,11 @@ jobs:
           - name: linux
             title: Linux
             quiet: false
-            runner: ubuntu-latest-16-core-oss
+            runs-on:
+              - 'self-hosted'
+              - 'linux'
+              - 'x64'
+              - 'metal'
           # - name: macos
           #   title: MacOS
           #   quiet: true
